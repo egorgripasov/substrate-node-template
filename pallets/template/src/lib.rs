@@ -9,6 +9,12 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use sp_std::vec::Vec;
 
+		/// ASCII encoded string to represent a name
+    pub type Text = Vec<u8>;
+		
+		#[derive(Encode, Decode, Clone, PartialEq, RuntimeDebug)]
+		pub struct DomainKey(pub [u8; 32]);
+
 	/// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -44,7 +50,10 @@ pub mod pallet {
     pub struct Pallet<T>(_);
     
     #[pallet::storage] 
-    pub(super) type Proofs<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, (T::AccountId, T::BlockNumber), ValueQuery>;   
+		pub(super) type Proofs<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, (T::AccountId, T::BlockNumber), ValueQuery>;
+		
+		#[pallet::storage]
+    pub(super) type DomainNames<T: Config> = StorageMap<_, Blake2_128Concat, Text, DomainKey>;
     
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
@@ -107,5 +116,19 @@ pub mod pallet {
 
 			Ok(().into())
 		}
+	}
+
+	#[pallet::genesis_config]
+	#[cfg_attr(feature = "std", derive(Default))]
+	pub struct GenesisConfig;
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig {
+			fn build(&self) {
+					let domain_key: DomainKey = DomainKey([0; 32]);
+					let domain_name: Text = "system".into();
+
+					<DomainNames<T>>::insert(domain_name, &domain_key);
+			}
 	}
 }
